@@ -182,7 +182,6 @@ export default function ManageUsersList({closeDeleteUsersModal,closeBulkUploadUs
               dataList={userTableList}
               columns={COLUMNS}
               navigateFunc={() => {}}
-              showCheckbox={true}
             />
           </div>
         </div>

@@ -22,7 +22,6 @@ export default function DesktopAnalysisView() {
     useState(false);
   const [encodedFormURI, setEncodedFormURI] = useState("");
   let { formName, formId } = useParams();
-  const [formDataFromApi, setFormDataFromApi] = useState();
 
   const [toast, setToast] = useState({
     toastOpen: false,
@@ -55,7 +54,7 @@ export default function DesktopAnalysisView() {
     const postData = { form_id: formId };
     const res = await getFormData(postData);
     const formData = res.data.form_submissions[0];
-    setFormDataFromApi(res.data.form_submissions[0])
+
     let formURI = await getPrefillXML(
       `${formData?.form_name}`,
       "",
@@ -139,7 +138,6 @@ export default function DesktopAnalysisView() {
         <ScheduleInspectionModal
           closeSchedule={setOpenSheduleInspectionModel}
           setToast={setToast}
-          instituteId={formDataFromApi?.institute?.id}
         />
       )}
     </>
