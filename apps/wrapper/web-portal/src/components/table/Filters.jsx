@@ -513,7 +513,7 @@ export const ScheduleManagementFilters = ({
   setPaginationInfo,
 }) => {
   const [showCalendar, setShowCalendar] = useState(false);
-  const [buttonText, setButtonText] = useState("Published On");
+  const [buttonText, setButtonText] = useState("Assessment Date");
   const [filters, setFilters] = useState({ condition: {} });
   const [state, setState] = useState({
     district: null,
@@ -582,7 +582,7 @@ export const ScheduleManagementFilters = ({
       submitted_on: null,
       status: null,
     });
-    setButtonText("Published On");
+    setButtonText("Assessment Date");
     setFilters({ condition: {} });
     setPaginationInfo((prevState) => ({
       ...prevState,
@@ -616,7 +616,7 @@ export const ScheduleManagementFilters = ({
           className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full px-8 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
           onClick={() => setShowCalendar(true)}
         >
-          {buttonText.includes("Published")
+          {buttonText.includes("Assessment")
             ? buttonText
             : readableDate(buttonText)}
         </button>
