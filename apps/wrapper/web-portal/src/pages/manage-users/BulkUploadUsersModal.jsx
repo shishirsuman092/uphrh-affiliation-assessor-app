@@ -280,13 +280,13 @@ function BulkUploadUsersModal({ closeBulkUploadUsersModal, setUsersCreated }) {
       }
       removeCookie("access_token");
     } catch (error) {
-      console.log("error - ", error);
-      setToast((prevState) => ({
-        ...prevState,
-        toastOpen: true,
-        toastMsg: "Error occured while creating user(s)!",
-        toastType: "error",
-      }));
+      const errorMessage = JSON.parse(error?.config?.data).regulators[0]?.user_id?.errorMessage
+        setToast((prevState) => ({
+          ...prevState,
+          toastOpen: true,
+          toastMsg: errorMessage,
+          toastType: "error",
+        }));
     } finally {
       setSpinner(false);
     }
