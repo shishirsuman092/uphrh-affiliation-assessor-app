@@ -184,11 +184,11 @@ if(value === '' || re.test(value)){
           navigation(ADMIN_ROUTE_MAP.adminModule.manageUsers.home);
         }
       } catch (error) {
-        console.log(error);
+        const errorMessage = JSON.parse(error?.config?.data).regulators[0]?.user_id?.errorMessage
         setToast((prevState) => ({
           ...prevState,
           toastOpen: true,
-          toastMsg: "Error occured while updating user!",
+          toastMsg: errorMessage,
           toastType: "error",
         }));
       } finally {
@@ -273,11 +273,11 @@ if(value === '' || re.test(value)){
           navigation(ADMIN_ROUTE_MAP.adminModule.manageUsers.home);
         }
       } catch (error) {
-        console.log("error - ", error);
+        const errorMessage = JSON.parse(error?.config?.data).regulators[0]?.user_id?.errorMessage
         setToast((prevState) => ({
           ...prevState,
           toastOpen: true,
-          toastMsg: "Error occured while creating user!",
+          toastMsg: errorMessage,
           toastType: "error",
         }));
       } finally {

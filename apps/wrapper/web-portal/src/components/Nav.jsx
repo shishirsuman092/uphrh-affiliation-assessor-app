@@ -20,41 +20,41 @@ export default function Nav() {
                 </NavLink>
               </li>
               {getCookie("regulator")[0]["role"] === "Super-Admin" && (
-                <li className="flex hover:text-primary-600 hover:cursor-pointer">
+                <li className="flex fontsize hover:text-primary-600 hover:cursor-pointer">
                   <NavLink to={ADMIN_ROUTE_MAP.adminModule.manageUsers.home}>
-                    Manage Users
+                    User Management
                   </NavLink>
                 </li>
               )}
-              <li className="flex hover:text-primary-600 hover:cursor-pointer">
+              <li className="flex fontsize hover:text-primary-600 hover:cursor-pointer">
                 <NavLink to={ADMIN_ROUTE_MAP.adminModule.manageForms.home}>
-                  Manage Forms
+                  Form Management
                 </NavLink>
               </li>
-              <li className="flex hover:text-primary-600 hover:cursor-pointer">
+              <li className="flex fontsize hover:text-primary-600 hover:cursor-pointer">
                 <NavLink to={ADMIN_ROUTE_MAP.adminModule.desktopAnalysis.home}>
                   Desktop Analysis
                 </NavLink>
               </li>
-              <li className="flex hover:text-primary-600 hover:cursor-pointer">
+              <li className="flex fontsize hover:text-primary-600 hover:cursor-pointer">
                 <NavLink
                   to={ADMIN_ROUTE_MAP.adminModule.onGroundInspection.home}
                 >
-                  On Ground Inspection Analysis
+                  On-Ground Inspection Analysis
                 </NavLink>
               </li>
-              <li className="flex hover:text-primary-600 hover:cursor-pointer">
+              <li className="flex fontsize hover:text-primary-600 hover:cursor-pointer">
                 <NavLink
                   to={ADMIN_ROUTE_MAP.adminModule.certificateManagement.home}
                 >
-                  Certificates Issued
+                  Certificate Management
                 </NavLink>
               </li>
-              <li className="flex hover:text-primary-600 hover:cursor-pointer">
+              <li className="flex fontsize hover:text-primary-600 hover:cursor-pointer">
                 <NavLink
                   to={ADMIN_ROUTE_MAP.adminModule.scheduleManagement.home}
                 >
-                  Inspections Scheduled
+                  Schedule Management
                 </NavLink>
               </li>
             </ul>
