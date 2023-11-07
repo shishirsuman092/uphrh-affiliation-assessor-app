@@ -227,11 +227,11 @@ export default function ManageUsersList({
       console.log("data", resUserData);
       setUserTableList(resUserData);
     } catch (error) {
-      console.log("error - ", error);
+      const errorMessage = JSON.parse(error?.config?.data).regulators[0]?.user_id?.errorMessage;
       setToast((prevState) => ({
         ...prevState,
         toastOpen: true,
-        toastMsg: "Error occured while deactivating!",
+        toastMsg: errorMessage,
         toastType: "error",
       }));
     } finally {
@@ -318,10 +318,11 @@ export default function ManageUsersList({
       setUserTableList(resUserData);
     } catch (error) {
       console.log("error - ", error);
+      const errorMessage = JSON.parse(error?.config?.data).regulators[0]?.user_id?.errorMessage
       setToast((prevState) => ({
         ...prevState,
         toastOpen: true,
-        toastMsg: "Error occured while activating!",
+        toastMsg: errorMessage,
         toastType: "error",
       }));
     } finally {
@@ -629,11 +630,11 @@ export default function ManageUsersList({
 
       removeCookie("access_token");
     } catch (error) {
-      console.log("error - ", error);
+      const errorMessage = JSON.parse(error?.config?.data).regulators[0]?.user_id?.errorMessage
       setToast((prevState) => ({
         ...prevState,
         toastOpen: true,
-        toastMsg: "Error occured while deleting the user!",
+        toastMsg: errorMessage,
         toastType: "error",
       }));
     } finally {
