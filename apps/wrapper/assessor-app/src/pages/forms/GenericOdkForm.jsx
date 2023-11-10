@@ -114,7 +114,10 @@ const GenericOdkForm = (props) => {
     let formData = await getFromLocalForage(
       `${formName}_${new Date().toISOString().split("T")[0]}`
     );
-
+    if(formData == null) {
+      fetchFormData();
+    }
+    else {
     let fileGCPPath = GCP_URL + formName + ".xml";
 
     let formURI = await getPrefillXML(
@@ -125,6 +128,7 @@ const GenericOdkForm = (props) => {
     );
 
     setEncodedFormURI(formURI);
+    }
   };
 
   const fetchFormData = async () => {
@@ -142,10 +146,9 @@ const GenericOdkForm = (props) => {
       formData = res.data.form_submissions[0];
       console.log("formData ===>", formData);
 
-      // setPaymentStatus(formData?.payment_status);
-      const postDataEvents = { id: formId };
-      // const events = await getStatusOfForms(postDataEvents);
-      // setFormStatus(events?.events);
+      const postDataEvents = { id: formID };
+      const events = await getStatusOfForms(postDataEvents);
+      setFormStatus(events?.events);
       setFormDataFromApi(res.data.form_submissions[0]);
       await setToLocalForage(
         `${userId}_${startingForm}_${new Date().toISOString().split("T")[0]}`,
@@ -342,6 +345,7 @@ const GenericOdkForm = (props) => {
   };
 
   const handleRenderPreview = () => {
+    alert("1");
     setPreviewModal(true);
     previewFlag = true;
 
@@ -382,7 +386,6 @@ const GenericOdkForm = (props) => {
     getSurveyUrl();
     getDataFromLocal();
     getCourseFormDetails();
-    fetchFormData();
     getFormData({
       loading,
       scheduleId,
