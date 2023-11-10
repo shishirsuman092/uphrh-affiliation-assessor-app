@@ -2,6 +2,7 @@ import axios from "axios";
 import { getCookie, makeHasuraCalls } from "../utils";
 import customPost from "./customPost";
 import customPostPdf from "./customPostPdf";
+import {APIS} from "../constants/index";
 
 //nconst BASE_URL = process.env.REACT_APP_USER_SERVICE_URL;
 const KEYCLOAK_BASE_URL =
@@ -497,6 +498,14 @@ export const editUserKeycloak = async (postData) => {
         Authorization: process.env.REACT_APP_AUTH_TOKEN,
       },
     }
+  );
+  return res;
+};
+
+export const getFormData = async (postData) => {
+  const res = await customPost.post(
+    APIS.groundAnalysis.viewForm,
+    postData
   );
   return res;
 };

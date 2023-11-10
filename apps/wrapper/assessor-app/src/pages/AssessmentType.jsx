@@ -142,10 +142,13 @@ const AssessmentType = () => {
         let courses_data = response?.data?.institute_form;
         if (courses_data?.length) {
           courses_data = courses_data.map((obj) => {
+            console.log("obj=>", obj.applicant_form_id);
             if (obj?.course?.formObject) {
               obj.course.formObject = obj.course.formObject?.replace(/\\/g, "");
               obj.course.formObject = JSON.parse(obj.course.formObject);
               obj.course.formObject.forEach((eachObj) => {
+                // appended form id
+                eachObj.form_id = obj.applicant_form_id;
                 if (
                   formNames.includes(
                     eachObj.name.substring(0, eachObj.name.lastIndexOf(".xml"))
@@ -203,6 +206,7 @@ const AssessmentType = () => {
   };
 
   const handleNavigateToForms = (formObj) => {
+    console.log("formObj =>", formObj);
     if (formObj?.status !== "completed" || !formObj?.status) {
       let form_name = "";
       if (formObj.name.includes(".xml")) {
@@ -211,7 +215,7 @@ const AssessmentType = () => {
         form_name = formObj.path?.trim();
       }
 
-      navigate(`${ROUTE_MAP.otherforms_param_formName}${form_name}`);
+      navigate(`${ROUTE_MAP.otherforms_param_formName}${form_name}/${formObj?.form_id}`);
     } else {
       setError("The form has already completed!");
       setTimeout(() => {
