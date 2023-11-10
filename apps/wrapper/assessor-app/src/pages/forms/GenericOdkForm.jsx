@@ -12,10 +12,11 @@ import {
   saveFormSubmission,
   updateFormStatus,
   getPrefillXML,
+  getFormData,
 } from "../../api";
 import {
   getCookie,
-  getFormData,
+  // getFormData,
   handleFormEvents,
   updateFormData,
   removeItemFromLocalForage,
@@ -37,7 +38,7 @@ let previewFlag = false;
 
 const GenericOdkForm = (props) => {
   const user = getCookie("userData");
-  let { formName, date } = useParams();
+  let { formName, date, formID } = useParams();
   const scheduleId = useRef();
   const [isPreview, setIsPreview] = useState(false);
   const [surveyUrl, setSurveyUrl] = useState("");
@@ -90,6 +91,11 @@ const GenericOdkForm = (props) => {
   const [errorModal, setErrorModal] = useState(false);
   const [previewModal, setPreviewModal] = useState(false);
   const { state } = useContext(StateContext);
+  const userDetails = getCookie("userData");
+  const userId = userDetails?.userRepresentation?.id;
+  const [formDataFromApi, setFormDataFromApi] = useState();
+  const [formStatus, setFormStatus] = useState("");
+  const [onSubmit, setOnSubmit] = useState(false);
   let courseObj = undefined;
 
   const loading = useRef(false);
@@ -119,6 +125,48 @@ const GenericOdkForm = (props) => {
     );
 
     setEncodedFormURI(formURI);
+  };
+
+  const fetchFormData = async () => {
+    let formData = {};
+    let filePath =
+      process.env.REACT_APP_GCP_AFFILIATION_LINK + formName + ".xml";
+
+    let data = await getFromLocalForage(
+      `${userId}_${formName}_${new Date().toISOString().split("T")[0]}`
+    );
+
+    const postData = { form_id: date };
+    try {
+      const res = await getFormData(postData);
+      formData = res.data.form_submissions[0];
+      console.log("formData ===>", formData);
+
+      // setPaymentStatus(formData?.payment_status);
+      const postDataEvents = { id: formId };
+      // const events = await getStatusOfForms(postDataEvents);
+      // setFormStatus(events?.events);
+      setFormDataFromApi(res.data.form_submissions[0]);
+      await setToLocalForage(
+        `${userId}_${startingForm}_${new Date().toISOString().split("T")[0]}`,
+        {
+          formData: formData?.form_data,
+          imageUrls: { ...data?.imageUrls },
+        }
+      );
+
+      let formURI = await getPrefillXML(
+        `${filePath}`,
+        formSpec.onSuccess,
+        formData?.form_data,
+        formData?.imageUrls
+      );
+      setEncodedFormURI(formURI);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      // setSpinner(false);
+    }
   };
 
   const updateSubmissionForms = async (course_id) => {
@@ -265,7 +313,6 @@ const GenericOdkForm = (props) => {
     if (window.location.host.includes("localhost")) {
       return;
     }
-
     const iframeElem = document.getElementById("enketo-form");
     var iframeContent =
       iframeElem?.contentDocument || iframeElem?.contentWindow.document;
@@ -273,12 +320,17 @@ const GenericOdkForm = (props) => {
       var section = iframeContent?.getElementsByClassName("or-group");
       if (!section) return;
       for (var i = 0; i < section?.length; i++) {
+        console.log(section[i]);
         var inputElements = section[i].querySelectorAll("input");
         inputElements.forEach((input) => {
           input.disabled = true;
+          // hide admin remarks and label in assessor form
+          if(input.name.toLowercase().includes('admin')) {
+            input.previousSibling.style.display = 'none';
+            input.style.display = 'none';
+          }
         });
       }
-
       iframeContent.getElementById("submit-form").style.display = "none";
       iframeContent.getElementById("save-draft").style.display = "none";
     }
@@ -328,7 +380,9 @@ const GenericOdkForm = (props) => {
   useEffect(() => {
     bindEventListener();
     getSurveyUrl();
+    getDataFromLocal();
     getCourseFormDetails();
+    fetchFormData();
     getFormData({
       loading,
       scheduleId,
