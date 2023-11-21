@@ -104,7 +104,7 @@ function App() {
         <BrowserRouter basename={'/app'}>
           <Routes>
             {/* Default landing page */}
-            <Route path="/" element={<Navigate to="/auth/login" />} />
+            <Route path="/app" element={<Navigate to="/auth/login" />} />
 
             {/* Register and Login Routes */}
             <Route path={ADMIN_ROUTE_MAP.auth} element={<Authenticate />}>
