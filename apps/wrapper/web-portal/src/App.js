@@ -101,7 +101,7 @@ function App() {
         {toast.toastOpen && (
           <Toast toastMsg={toast.toastMsg} toastType={toast.toastType} />
         )}
-        <BrowserRouter>
+        <BrowserRouter basename={'/app'}>
           <Routes>
             {/* Default landing page */}
             <Route path="/" element={<Navigate to="/auth/login" />} />
