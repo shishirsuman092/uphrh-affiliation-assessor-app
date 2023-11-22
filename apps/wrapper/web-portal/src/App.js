@@ -64,7 +64,7 @@ function App() {
   });
 
   const messaging = getMessaging(fireBaseApp);
-  const onMessageListener = (async () => {
+   const onMessageListener = (async () => {
     const messagingResolve = await messaging;
     if (messagingResolve) {
       onMessage(messagingResolve, (payload) => {
@@ -77,7 +77,7 @@ function App() {
         }));
       });
     }
-  })();
+  })(); 
 
   useEffect(() => {
     getPermissionForToken();
@@ -102,7 +102,7 @@ function App() {
         {toast.toastOpen && (
           <Toast toastMsg={toast.toastMsg} toastType={toast.toastType} />
         )}
-        <BrowserRouter basename={'/app'}>
+        <BrowserRouter>
           <Routes>
             {/* Default landing page */}
           {   <Route path="/" element={<Navigate to="/auth/login" />} /> }
