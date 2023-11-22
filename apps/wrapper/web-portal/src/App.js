@@ -54,6 +54,7 @@ import { getCookie, getLocalTimeInISOFormat } from "./utils";
 import Toast from "./components/Toast";
 
 function App() {
+  console.log("Good afternoon Sharath !!!!!!!")
   const loggedInUser = getCookie("regulator")?.[0];
   const [spinner, setSpinner] = useState(false);
   const [toast, setToast] = useState({
@@ -84,13 +85,13 @@ function App() {
 
   useEffect(() => {
     if (toast) {
-      setTimeout(() => {
+    /*   setTimeout(() => {
         setToast({
           toastOpen: false,
           toastMsg: "",
           toastType: "",
         });
-      }, 3000);
+      }, 3000); */
     }
   }, [toast]);
 
