@@ -23,7 +23,7 @@ import AdminSingUp from "./login/AdminSignUp";
 import LoginEnterOtp from "./login/LoginEnterOtp";
 
 // Dashboard pages...
-import DashboardLandingPage from "./pages/DashboardLandingPage";
+import DashboardLandingPage from "./pages/dashboard/DashboardLandingPage";
 import GroundInspectionAnalysis from "./pages/ground-analysis/GroundInspectionAnalysis";
 import GroundInspectionListForms from "./pages/ground-analysis/GroundInspectionListForms";
 import GroundInspectionViewForm from "./pages/ground-analysis/GroundInspectionViewForm";
@@ -124,12 +124,6 @@ function App() {
 
             {/* Dashboard routing starts here */}
             <Route
-              path={ADMIN_ROUTE_MAP.adminModule.dashboard}
-              element={
-                <PrivateRoute>
-                  <DashboardLandingPage />
-                </PrivateRoute>
-              }
             >
               {loggedInUser?.role === "Super-Admin" && (
                 <Route
@@ -210,6 +204,13 @@ function App() {
               >
                 <Route index element={<ScheduleManagementList />}></Route>
               </Route>
+              <Route path={ADMIN_ROUTE_MAP.adminModule.dashboard.home}
+              element={
+                <PrivateRoute>
+                  <DashboardLandingPage />
+                </PrivateRoute>
+              }
+              ></Route>
               <Route
                 path="*"
                 element={
