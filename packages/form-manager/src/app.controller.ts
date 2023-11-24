@@ -1,23 +1,33 @@
 import {
   Body,
+  CACHE_MANAGER,
   Controller,
   Get,
   HttpException,
   HttpStatus,
+  Inject,
   Param,
   Post,
   Query,
   UploadedFile,
   UseInterceptors,
+  Req,
+  Headers
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express/multer';
 import { AppService } from './app.service';
 import { v4 as uuidv4 } from 'uuid';
+import { Storage, UploadResponse } from '@google-cloud/storage';
+import * as fs from 'fs';
+import { diskStorage } from 'multer';
+
+
+import { Cache } from 'cache-manager';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const Minio = require('minio');
+// const Minio = require('minio');
 
-import { Client, ItemBucketMetadata } from 'minio';
+// import { Client, ItemBucketMetadata } from 'minio';
 import { ConfigService } from '@nestjs/config';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -29,6 +39,7 @@ const request = require('request');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const xml2js = require('xml2js');
 
+
 type PrefillDto = {
   form: string;
   onFormSuccessData: any;
@@ -38,99 +49,127 @@ type PrefillDto = {
 @Controller()
 export class AppController {
   constructor(
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private readonly appService: AppService,
     private configService: ConfigService,
   ) { }
 
-  getLoginToken = () => {
+  // MINIO_ENDPOINT = this.configService.get('MINIO_ENDPOINT');
+  // MINIO_URL = this.configService.get('MINIO_URL');
+  GCP_PROJECT_ID = this.configService.get('GCP_PROJECT_ID');
+  GOOGLE_APPLICATION_CREDENTIALS = this.configService.get('GOOGLE_APPLICATION_CREDENTIALS');
+  GCP_BUCKET_NAME =this.configService.get('GCP_BUCKET_NAME');
+  FORM_MANAGER_URL = this.configService.get('FORM_MANAGER_URL');
+
+  // getLoginToken = () => {
+  //   try {
+  //     const postData = {
+  //       loginId: this.configService.get('MINIO_LOGIN_ID'),
+  //       password: this.configService.get('MINIO_PASSWORD'),
+  //       applicationId: this.configService.get('MINIO_APPLICATION_ID'),
+  //     };
+
+  //     const header = {
+  //       'content-type': 'application/json',
+  //       Authorization: this.configService.get('MINIOT_HEADER_AUTH_TOKEN'),
+  //     };
+
+  //     const options = {
+  //       method: 'POST',
+  //       url: this.configService.get('MINIO_LOGIN_URL'),
+  //       headers: header,
+  //       json: postData,
+  //     };
+
+  //     console.log(options);
+
+  //     return new Promise((resolve, reject) => {
+  //       request(options, function (error, response, body) {
+  //         if (error || !body) {
+  //           return reject(error);
+  //         }
+  //         resolve(body.token);
+  //       });
+  //     });
+  //   } catch (err) {
+  //     console.log('Error', err);
+  //     throw err;
+  //   }
+  // };
+
+  // getSessionToken = async (logToken) => {
+  //   const MINIO = {
+  //     BUCKET_ID: this.configService.get('MINIO_BUCKET_ID'),
+  //     HOST: this.configService.get('MINIO_HOST'),
+  //   };
+
+  //   try {
+  //     const options = {
+  //       method: 'POST',
+  //       url: `https://${MINIO.HOST}/minio/${MINIO.BUCKET_ID}/?Action=AssumeRoleWithWebIdentity&DurationSeconds=36000&WebIdentityToken=${logToken}&Version=2011-06-15`,
+  //     };
+
+  //     return new Promise((resolve, reject) => {
+  //       request(options, async function (error, response, body) {
+  //         if (error || !body) {
+  //           return reject(error);
+  //         }
+  //         const parser = new xml2js.Parser();
+  //         const doc = await parser.parseStringPromise(body);
+
+  //         if (
+  //           doc &&
+  //           doc.AssumeRoleWithWebIdentityResponse &&
+  //           doc.AssumeRoleWithWebIdentityResponse
+  //             .AssumeRoleWithWebIdentityResult &&
+  //           doc.AssumeRoleWithWebIdentityResponse
+  //             .AssumeRoleWithWebIdentityResult.length &&
+  //           doc.AssumeRoleWithWebIdentityResponse
+  //             .AssumeRoleWithWebIdentityResult[0].Credentials &&
+  //           doc.AssumeRoleWithWebIdentityResponse
+  //             .AssumeRoleWithWebIdentityResult[0].Credentials.length
+  //         ) {
+  //           const creds =
+  //             doc.AssumeRoleWithWebIdentityResponse
+  //               .AssumeRoleWithWebIdentityResult[0].Credentials[0];
+
+  //           return resolve({
+  //             accessKey: creds.AccessKeyId[0],
+  //             secretKey: creds.SecretAccessKey[0],
+  //             sessionToken: creds.SessionToken[0],
+  //           });
+  //         }
+  //         reject('Body error');
+  //       });
+  //     });
+  //   } catch (err) {
+  //     console.log(err);
+  //     throw err;
+  //   }
+  // };
+
+  uploadToGcpBucket(filePath: string, fileName: string): Promise<UploadResponse> {
+    const storage = new Storage({
+      projectId: this.GCP_PROJECT_ID,
+      keyFilename: this.GOOGLE_APPLICATION_CREDENTIALS
+    });
+    const bucketName= this.GCP_BUCKET_NAME;
+    let folderName= 'affiliation/formsfiles';
+
     try {
-      const postData = {
-        loginId: this.configService.get('MINIO_LOGIN_ID'),
-        password: this.configService.get('MINIO_PASSWORD'),
-        applicationId: this.configService.get('MINIO_APPLICATION_ID'),
-      };
-
-      const header = {
-        'content-type': 'application/json',
-        Authorization: this.configService.get('MINIOT_HEADER_AUTH_TOKEN'),
-      };
-
-      const options = {
-        method: 'POST',
-        url: this.configService.get('MINIO_LOGIN_URL'),
-        headers: header,
-        json: postData,
-      };
-
-      return new Promise((resolve, reject) => {
-        request(options, function (error, response, body) {
-          if (error || !body) {
-            return reject(error);
-          }
-          resolve(body.token);
-        });
+     return storage.bucket(bucketName).upload(filePath, {
+        destination: `${folderName}/${fileName}`,
       });
-    } catch (err) {
-      console.log('Error', err);
-      throw err;
+    } catch (error) {
+      console.error('Error uploading file to GCP bucket:', error);
+      throw error;
     }
-  };
-
-  getSessionToken = async (logToken) => {
-    const MINIO = {
-      BUCKET_ID: this.configService.get('MINIO_BUCKET_ID'),
-      HOST: this.configService.get('MINIO_HOST'),
-    };
-
-    try {
-      const options = {
-        method: 'POST',
-        url: `https://${MINIO.HOST}/minio/${MINIO.BUCKET_ID}/?Action=AssumeRoleWithWebIdentity&DurationSeconds=36000&WebIdentityToken=${logToken}&Version=2011-06-15`,
-      };
-
-      return new Promise((resolve, reject) => {
-        request(options, async function (error, response, body) {
-          if (error || !body) {
-            return reject(error);
-          }
-          const parser = new xml2js.Parser();
-          const doc = await parser.parseStringPromise(body);
-
-          if (
-            doc &&
-            doc.AssumeRoleWithWebIdentityResponse &&
-            doc.AssumeRoleWithWebIdentityResponse
-              .AssumeRoleWithWebIdentityResult &&
-            doc.AssumeRoleWithWebIdentityResponse
-              .AssumeRoleWithWebIdentityResult.length &&
-            doc.AssumeRoleWithWebIdentityResponse
-              .AssumeRoleWithWebIdentityResult[0].Credentials &&
-            doc.AssumeRoleWithWebIdentityResponse
-              .AssumeRoleWithWebIdentityResult[0].Credentials.length
-          ) {
-            const creds =
-              doc.AssumeRoleWithWebIdentityResponse
-                .AssumeRoleWithWebIdentityResult[0].Credentials[0];
-
-            return resolve({
-              accessKey: creds.AccessKeyId[0],
-              secretKey: creds.SecretAccessKey[0],
-              sessionToken: creds.SessionToken[0],
-            });
-          }
-          reject('Body error');
-        });
-      });
-    } catch (err) {
-      console.log(err);
-      throw err;
-    }
-  };
-
-  @Get()
-  getHello(): string {
-    return this.appService.getHello();
   }
+
+  // @Get()
+  // getHello(): string {
+  //   return this.appService.getHello();
+  // }
 
   @Post('prefill')
   getPrefill(@Body() prefillDto: PrefillDto): string {
@@ -151,7 +190,6 @@ export class AppController {
       console.log('onFormSuccessData', onFormSuccessData);
       console.log('prefillSpec', prefillSpec);
       if (onFormSuccessData !== 'undefined') {
-        console;
         return this.appService.prefillForm(
           form,
           JSON.parse(onFormSuccessData),
@@ -165,58 +203,185 @@ export class AppController {
     }
   }
 
+  @Post('prefillXML')
+  async prefillXML(
+    @Query('formUrl') formUrl,
+    @Query('onFormSuccessData') onFormSuccessData,
+    @Body('prefillXML') prefillXML,
+    @Body('imageUrls') files,
+    @Headers() headers: any
+  ): Promise<string> {
+    try {
+      if (onFormSuccessData) {
+        const prefilledForm =await this.appService.prefillFormXML(
+          formUrl,
+          onFormSuccessData,
+          prefillXML,
+          files,
+          headers.origin
+        );
+        const instanceId = uuidv4();
+        await this.cacheManager.set(instanceId, prefilledForm, 86400 * 10);
+        return `${this.FORM_MANAGER_URL}/form/instance/${instanceId}`;
+      } else {
+        return 'OK';
+      }
+    } catch (e) {
+      console.error(e);
+      return 'OK2';
+    }
+  }
+
+  @Post('submissionXML')
+  async submissionXML(
+    @Query('form') form,
+    @Body('prefillXML') prefillXML,
+    @Body('imageUrls') files,
+    @Headers() headers: any
+  ): Promise<string> {
+    try {
+      const submissionFormXML = await this.appService.submissionFormXML(
+        form,
+        prefillXML,
+        files,
+        headers.origin
+      );
+      return submissionFormXML;
+    } catch (e) {
+      console.error(e);
+      return 'OK2';
+    }
+  }
+
   @Get('form/:id')
   getForm(@Param('id') id): string {
     return this.appService.getForm(id);
   }
 
-  @Get('form/parse/:xml')
-  parseXML(@Param('xml') xml): any {
-    return parser.toJson(xml);
+  @Get('form/instance/:instanceId')
+  async getFormWithInstanceID(
+    @Param('instanceId') instanceId,
+  ): Promise<string> {
+    const xml = await this.cacheManager.get(instanceId);
+    return xml;
   }
+
+  @Post('parse')
+  parseXML(@Body() xml: any): any {
+    // console.log({ xml })
+    // console.log(parser.toJson(xml));
+    return parser.toJson(xml.xml);
+  }
+
+  @Get('osceForm/:type/:year/:speciality?')
+  getOsceForm(
+    @Param('type') type,
+    @Param('year') year,
+    @Param('speciality') speciality,
+  ): any {
+    return this.appService.getOsceForms(type, year, speciality);
+  }
+
+  @Get('osceFormTeachers/:type/:year/:speciality?')
+  getOsceFormTeachers(
+    @Param('type') type,
+    @Param('year') year,
+    @Param('speciality') speciality,
+  ): any {
+    return this.appService.getOsceForms(type, year, speciality, 2);
+  }
+
+  // @Post('form/uploadFile')
+  // @UseInterceptors(FileInterceptor('file'))
+  // async uploadFile(@UploadedFile() file: Express.Multer.File, @Req() req: any) {
+  //   console.log(file);
+  //   const extension = file.originalname.split('.').pop();
+  //   const fileName = uuidv4() + `.${extension}`;
+  //   // const tokenRes = await this.getLoginToken();
+  //   // const sessionRes: any = await this.getSessionToken(tokenRes);
+
+  //   // console.log('sessionRes', sessionRes);
+
+  //   const minioClient: Client = new Minio.Client({
+  //     endPoint: this.MINIO_ENDPOINT,
+  //     port: parseInt(this.configService.get('MINIO_PORT')),
+  //     useSSL: this.configService.get('MINIO_USE_SSL') === true,
+  //     accessKey: this.configService.get('MINIO_USERNAME'),
+  //     secretKey: this.configService.get('MINIO_PASSWORD')
+  //   });
+
+  //   const metaData: ItemBucketMetadata = {
+  //     'Content-Type': file.mimetype,
+  //   };
+
+  //   minioClient.putObject(
+  //     this.configService.get('MINIO_BUCKETNAME'),
+  //     fileName,
+  //     file.buffer,
+  //     file.size,
+  //     metaData,
+  //     function (err, res) {
+  //       if (err) {
+  //         console.log(err)
+  //         throw new HttpException(
+  //           'Error uploading file',
+  //           HttpStatus.BAD_REQUEST,
+  //         );
+  //       }
+  //     },
+  //   );
+
+  //   const fileURL = `${req.protocol}://${this.MINIO_URL}/${this.configService.get('MINIO_BUCKETNAME')}/${fileName}`;
+
+  //   console.log('Uploaded File:', fileURL);
+
+  //   return { fileURL };
+  // }
 
   @Post('form/uploadFile')
-  @UseInterceptors(FileInterceptor('file'))
-  async uploadFile(@UploadedFile() file: Express.Multer.File) {
-    const extension = file.originalname.split('.').pop();
-    const fileName = uuidv4() + `.${extension}`;
-    const tokenRes = await this.getLoginToken();
-    const sessionRes: any = await this.getSessionToken(tokenRes);
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './uploads',
+        filename: (req, file, cb) => {
+          cb(null, `${file.originalname}`);
+        },
+      }),
+    }),
+  )
+  async uploadFile(@UploadedFile() filetoUpload: any) {
+    console.log("File to Upload", filetoUpload);
+    const extension = filetoUpload.originalname.split('.').pop();
+    // const fileName = uuidv4() + `.${extension}`;
+    const fileName = uuidv4() + `-${filetoUpload.originalname}`;
+    const filePath = filetoUpload.path;
+    try {
+      // Upload the file to GCP bucket
+      const uploadResponse = await this.uploadToGcpBucket(filePath, fileName);
+      const [file] = uploadResponse;
+      console.log('File uploaded successfully.', uploadResponse);
 
-    console.log('sessionRes', sessionRes);
-
-    const minioClient: Client = new Minio.Client({
-      endPoint: 'cdn.samagra.io',
-      useSSL: true,
-      accessKey: sessionRes?.accessKey,
-      secretKey: sessionRes?.secretKey,
-      sessionToken: sessionRes?.sessionToken,
-    });
-
-    const metaData: ItemBucketMetadata = {
-      'Content-Type': file.mimetype,
-    };
-
-    minioClient.putObject(
-      this.configService.get('MINIO_BUCKET_ID'),
-      fileName,
-      file.buffer,
-      file.size,
-      metaData,
-      function (err, res) {
-        if (err) {
-          throw new HttpException(
-            'Error uploading file',
-            HttpStatus.BAD_REQUEST,
-          );
+      // Cleanup the generated .xml and uploaded .xlsx files
+      fs.unlink(filePath, (unlinkError) => {
+        if (unlinkError) {
+          console.error('Error deleting file:', unlinkError);
         }
-      },
-    );
+        fs.unlink(filetoUpload?.path, (unlinkUploadError) => {
+          if (unlinkUploadError) {
+            console.error('Error deleting uploaded file:', unlinkUploadError);
+          }
+        });
+      });
+      const fileURL = `${file.storage.apiEndpoint}/${file.metadata.bucket}/${file.metadata.name}`;
 
-    const fileURL = `https://cdn.samagra.io/${this.configService.get(
-      'MINIO_BUCKET_ID',
-    )}/${fileName}`;
+      console.log('Uploaded File:', fileURL);
 
-    return { fileURL };
+      return { fileURL };
+    } catch (uploadError) {
+      console.log('Error uploading file to GCP bucket', uploadError);
+    }
   }
+
+
+
 }
