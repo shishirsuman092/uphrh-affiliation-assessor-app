@@ -1,0 +1,76 @@
+tasks:
+  - name: Setup Development Env
+    openMode: tab-after
+    init: |
+      type -p curl >/dev/null || sudo apt install curl -y
+      curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+      sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
+      echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+      sudo apt update
+      sudo apt install gh -y
+      gp sync-done dev-setup
+  - name: Install ODK Central
+    openMode: tab-after
+    init: |
+      gp sync-done dev-setup
+      bash install-central.sh
+  - name: Start Services
+    openMode: tab-after
+    init: |
+      gp sync-done dev-setup
+      # Not needed now, we can use docker-compose networking.. but one can use this in a script to repalce env vars at runtime in .env
+      # sed -i~ "/^FORM_MANAGER_URL=/s/=.*/=https\:\/\/3006-${GITPOD_WORKSPACE_URL:8}/" .env
+      sed -i~ "/^MINIO_URL=/s/=.*/=https\:\/\/9000-${GITPOD_WORKSPACE_URL:8}/" .env
+      # sed -i~ "/^MINIO_ENDPOINT=/s/=.*/=9000-${GITPOD_WORKSPACE_URL:8}/" .env
+      # sed -i~ "/^MINIO_PORT=/s/=.*/=80/" .env
+      # sed -i~ "/^MINIO_USE_SSL=/s/=.*/=true/" .env
+      # Replace env vars for react wrapper
+      sed -i~ "/^REACT_APP_ENKETO_URL=/s/=.*/=https\:\/\/8065-${GITPOD_WORKSPACE_URL:8}/" .env
+      sed -i~ "/^REACT_APP_FORM_MANAGER_URL=/s/=.*/=https\:\/\/3006-${GITPOD_WORKSPACE_URL:8}/" .env
+      sed -i~ "/^REACT_APP_HASURA_URL=/s/=.*/=https\:\/\/8080-${GITPOD_WORKSPACE_URL:8}/" .env
+      # for enketo-express
+      sed -i~ "/^FORM_MANAGER_BASE_URI=/s/=.*/=https\:\/\/3006-${GITPOD_WORKSPACE_URL:8}/" .env
+      
+      docker-compose up -d
+      gp sync-done setup
+      
+ports:
+  - port: 8065
+    onOpen: ignore
+    visibility: public
+    description: Enketo Express
+
+  - port: 3006
+    onOpen: ignore
+    visibility: public
+    description: Form Manager
+
+  - port: 3000 
+    onOpen: ignore
+    visibility: public
+    description: React Wrapper
+
+  - port: 8080
+    onOpen: ignore
+    visibility: public
+    description: Hasura
+
+  - port: 9011 
+    onOpen: ignore
+    visibility: public
+    description: Fusion Auth
+
+  - port: 8090 
+    onOpen: ignore
+    visibility: public
+    description: ODK Central
+
+  - port: 9001 
+    onOpen: ignore
+    visibility: public
+    description: Minio UI
+  
+  - port: 9000 
+    onOpen: ignore
+    visibility: public
+    description: Minio API

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="./images/niramayaLogo.png" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="Regulator portal analysis the data from the Applicant filled form and assign to Ground assessor for further verification of the data and once received, it analysis both data and admin takes decision" />
+
+    <link rel="apple-touch-icon" href="./images/niramayaLogo.png" />
+    <link rel="stylesheet" href="./../dist/output.css" />
+    <!--
+      manifest.json provides metadata used when your web app is installed on a
+      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
+    -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <!--
+      Notice the use of %PUBLIC_URL% in the tags above.
+      It will be replaced with the URL of the `public` folder during the build.
+      Only files inside the `public` folder can be referenced from the HTML.
+
+      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
+      work correctly both with client-side routing and a non-root public URL.
+      Learn how to configure a non-root public URL by running `npm run build`.
+    -->
+    <title>Regulator Portal</title>
+  </head>
+  <body class="bg-gray-100 w-full min-h-screen">
+    <script type="module" src="https://unpkg.com/@material-tailwind/html@latest/scripts/popover.js"></script>
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/fingerprintjs2/1.5.0/fingerprint2.min.js"></script> -->
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+    <!-- <script type="module" src="node_modules/@material-tailwind/html@latest/scripts/popover.js"></script> -->
+    
+    <!--
+      This HTML file is a template.
+      If you open it directly in the browser, you will see an empty page.
+
+      You can add webfonts, meta tags, or analytics to this file.
+      The build step will place the bundled scripts into the <body> tag.
+
+      To begin the development, run `npm start` or `yarn start`.
+      To create a production bundle, use `npm run build` or `yarn build`.
+    -->
+
+    <!-- <script>
+      if (window.requestIdleCallback) {
+        requestIdleCallback(function () {
+          Fingerprint2().get(function (components) {
+            console.log('components - ', components) // an array of components: {key: ..., value: ...}
+          })
+        })
+      } else {
+        setTimeout(function () {
+          Fingerprint2().get(function (components) {
+            console.log(components) // an array of components: {key: ..., value: ...}
+          })
+        }, 1000)
+      }
+    </script> -->
+<!--     <script type="text/javascript">
+       (() => {
+      if (location.pathname === '/') {
+        window.location.href = location.origin + '/app';
+      }
+    })
+    </script> -->
+  </body>
+</html>

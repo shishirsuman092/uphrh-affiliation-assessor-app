@@ -1,6 +1,14 @@
 import { xml2json } from './xml2json';
 
 import settings from './settings';
+import imageCompression from 'browser-image-compression';
+const options = {
+    maxSizeMB: 0.5,
+    maxWidthOrHeight: 840,
+    useWebWorker: true,
+}
+
+
 
 // import { config } from '../../../../app/models/config-model';
 
@@ -51,7 +59,7 @@ export class FormController {
       }
       */
 
-    constructor(formSpec) {
+    constructor(formSpec='') {
         /* Valid States:
             INITIALIZED
             FORM_SUCCESS
@@ -63,12 +71,19 @@ export class FormController {
         */
         this._state = 'INITIALIZED';
         this._message = '';
-        this.formSpec = formSpec;
+        if(!!formSpec){
+            this.formSpec = formSpec;
+            this.formSpec.isSuccessExecute = () => this.executeMethod(this.formSpec.successCheck);
+            this.formSpec.onFormSuccessExecute = () => this.executeMethod(this.formSpec.onSuccess.sideEffect);
+            this.formSpec.onFormFailureExecute = () => this.executeMethod(this.formSpec.onFailure.sideEffect);
+        }
+        // this.formSpec = formSpec;
         this._parser = new DOMParser();
+        this.formFiles = null;
 
-        this.formSpec.isSuccessExecute = () => this.executeMethod(this.formSpec.successCheck);
-        this.formSpec.onFormSuccessExecute = () => this.executeMethod(this.formSpec.onSuccess.sideEffect);
-        this.formSpec.onFormFailureExecute = () => this.executeMethod(this.formSpec.onFailure.sideEffect);
+        // this.formSpec.isSuccessExecute = () => this.executeMethod(this.formSpec.successCheck);
+        // this.formSpec.onFormSuccessExecute = () => this.executeMethod(this.formSpec.onSuccess.sideEffect);
+        // this.formSpec.onFormFailureExecute = () => this.executeMethod(this.formSpec.onFailure.sideEffect);
     }
 
     async executeMethod(functionString) {
@@ -96,25 +111,33 @@ export class FormController {
                 }
             }
         }
-
         return null;
     }
 
     async uploadFile(data) {
-        const fd = new FormData();
-        var newFile = new File([data], data.name, { type: data.type });
-        console.log(newFile);
-        fd.append('file', newFile, data.name);
-        const response = await fetch(settings.formManagerBaseURI + '/form/uploadFile', {
-            method: 'POST',
-            body: fd
-        }).then(s => {
-            return s.json();
-        }).catch(e => {
-            console.log(e);
-        });
+        console.log("Ab dekh data:", data)
+        if (data) {
+            const fd = new FormData();
+            var newFile = new File([data], data.name, { type: data.type });
+            // Compressing this file
+            if(data.type.includes('image')) {
+                newFile = await imageCompression(newFile, options);
+            }
+            fd.append('file', newFile, data.name);
+            // const response = await fetch(`${settings.formManagerBaseURI}/form/uploadFile`, {
+            const response = await fetch(`https://formmanager.upsmfac.org/form/uploadFile`, {
+                method: 'POST',
+                body: fd
+            }).then(s => {
+                return s.json();
+            }).catch(e => {
+                console.log(e);
+                return null;
+            });
 
-        return response.fileURL;
+            return response ? response.fileURL : null;
+        }
+        return null;
     }
 
     set(obj, path, value) {
@@ -137,13 +160,55 @@ export class FormController {
 
     async processForm(formData, formFiles) {
         const doc = this._parser.parseFromString(formData, 'text/xml');
-        this.formData = (await fetch(settings.formManagerBaseURI + '/form/parse/' + encodeURIComponent(formData)).then(res => res.json())).data;
-        for (let i = 0; i < formFiles.length; i++) {
-            const file = formFiles[i];
-            const fileURL = await this.uploadFile(file);
-            const kk = this.findKey(this.formData, file.name, '$t', '');
-            this.formData = this.set(this.formData, kk.substring(1), fileURL);
+
+        if(formFiles.length > 0 ) {
+             // Uploading images to Minio and replacing in formData
+            for (let i = 0; i < formFiles.length; i++) {
+                if(typeof formFiles[i] !== "string") {
+                    let minioUri = await this.uploadFile(formFiles[i]);
+                    console.log(minioUri, formFiles[i].name);
+                    if (minioUri) {
+                        formData = formData.replace(formFiles[i].name, minioUri);
+                    }
+                }
+               
+            }
         }
+        this.formDataXml = formData.toString();
+        console.log("Updated FormData:", formData);
+
+        // const parseRes = await fetch(`${settings.formManagerBaseURI}/parse`, {
+        const parseRes = await fetch(`https://formmanager.upsmfac.org/parse`, {
+            method: "POST",
+            body: JSON.stringify({ xml: formData.toString() }),
+            headers: {
+                "Content-type": "application/json; charset=UTF-8"
+            }
+        }).then(res => res.json()).catch(e => {
+            this._state = 'FORM_FAILURE_OFFLINE';
+            this.formFiles = formFiles;
+            window.parent.postMessage(JSON.stringify({
+                state: this._state,
+                formDataXml: formData,
+                formFilesXml: formFiles
+            }), '*');
+        });
+
+        if (parseRes == undefined)
+            return Promise.resolve({
+                status: "offline",
+                message: "You are oflline. Your form data has been saved. Please re-submit using the submit button once back online"
+            });
+        this.formData = parseRes.data;
+
+        // for (let i = 0; i < formFiles.length; i++) {
+        //     const file = formFiles[i];
+        //     const fileURL = await this.uploadFile(file);
+        //     // console.log({ fileURL });
+        //     console.log(this.findKey)
+        //     const kk = this.findKey(this.formData, file.name, '$t', '');
+        //     this.formData = this.set(this.formData, kk.substring(1), fileURL);
+        // }
         if (await this.formSpec.isSuccessExecute() === true) {
             this._state = 'FORM_SUCCESS';
             this._onFormSuccessData = await this.formSpec.onFormSuccessExecute();
@@ -168,16 +233,97 @@ export class FormController {
         });
     }
 
+    async processFormNew(formData, formFiles) {
+        const doc = this._parser.parseFromString(formData, 'text/xml');
+
+        // Uploading images to Minio and replacing in formData
+        for (let i = 0; i < formFiles.length; i++) {
+            if(typeof formFiles[i] !== "string") {
+                let minioUri = await this.uploadFile(formFiles[i]);
+                console.log(minioUri, formFiles[i].name);
+                if (minioUri) {
+                    formData = formData.replace(formFiles[i].name, minioUri);
+                }
+            }
+        }
+
+        console.log("Updated FormData:", formData);
+
+        const parseRes = await fetch(`${settings.formManagerBaseURI}/parse`, {
+            method: "POST",
+            body: JSON.stringify({ xml: formData.toString() }),
+            headers: {
+                "Content-type": "application/json; charset=UTF-8"
+            }
+        }).then(res => res.json()).catch(e => {
+            this._state = 'FORM_FAILURE_OFFLINE';
+            this.formFiles = formFiles;
+            window.parent.postMessage(JSON.stringify({
+                state: this._state,
+                formDataXml: formData,
+                formFilesXml: formFiles
+            }), '*');
+        });
+
+        if (parseRes == undefined) {
+            // this._state = 'FORM_FAILURE';
+            // this._onFormFailureData = this.formSpec.onFormFailureExecute();
+            this._state = 'ON_FORM_FAILURE_COMPLETED';
+            // this.nextForm = this.formSpec.onFailure.next;
+            // this._message = this.formSpec.messageOnFailure;
+        } else {
+            this.formData = parseRes.data;
+            // this._state = 'FORM_SUCCESS';
+            // this._onFormSuccessData = await this.formSpec.onFormSuccessExecute();
+            this._state = 'ON_FORM_SUCCESS_COMPLETED';
+            // this.nextForm = this.formSpec.onSuccess.next;
+            // this._message = this.formSpec.messageOnSuccess;
+        }
+
+        return Promise.resolve({
+            state: this._state,
+            status: this._state.includes('FAILURE') ? 'failure' : 'success',
+            message: this._message,
+            nextForm: this.nextForm,
+            onFormSuccessData: this._onFormSuccessData,
+            onFormFailureData: this._onFormFailureData
+        });
+    }
+
     async broadcastFormData() {
         // broadcast form data to parent window
         window.parent.postMessage(JSON.stringify({
             nextForm: this.nextForm,
             formData: this.formData,
+            formDataXml: this.formDataXml,
             onSuccessData: this._onFormSuccessData,
             onFailureData: this._onFormFailureData,
             state: this._state
         }), '*');
     }
+
+    async broadcastFormDataUpdate(xml, fileURLs) {
+        console.log("Broadcasting file update")
+        // broadcast form data to parent window
+        window.parent.postMessage(JSON.stringify({
+            formData: xml,
+            formXML: xml,
+            state: this._state,
+            fileURLs: fileURLs
+        }), '*');
+    }
+
+    async broadcastFileRemoveUpdate(xml, fileURLs) {
+        console.log("Broadcasting file update")
+        // broadcast form data to parent window
+        window.parent.postMessage(JSON.stringify({
+            formData: xml,
+            formXML: xml,
+            state: this._state,
+            fileURLs: fileURLs
+        }), '*');
+    }
+
 
     async submit() {
         // submit form data to server

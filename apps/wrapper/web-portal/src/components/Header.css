@@ -1,0 +1,8 @@
+.menus li {
+    display: flex;
+    align-items: center;
+}
+
+.menus .fontsize {
+    font-size: 13px;
+}
