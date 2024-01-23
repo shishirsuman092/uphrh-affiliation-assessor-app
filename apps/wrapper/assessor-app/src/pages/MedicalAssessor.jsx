@@ -21,6 +21,7 @@ const MedicalAssessor = () => {
   const handleClick = (route) => {
     navigate(route);
   };
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   const getAssessorDetails = async (email) => {
     const postData = {
@@ -41,8 +42,8 @@ const MedicalAssessor = () => {
       };
       setToLocalForage("required_data", requiredData);
     } catch (error) {
-      console.log("here");
-      alert(error);
+      console.log("here", error);
+     // alert(error);
     }
   };
 
@@ -55,7 +56,7 @@ const MedicalAssessor = () => {
   }, []);
 
   return (
-    <CommonLayout back="/login" backDisabled logoutDisabled>
+    <CommonLayout back="/login" backDisabled  logoutDisabled={isOnline ? false : true}>
       <div className="flex flex-col px-5 h-[calc(100vh-176px)] overflow-y-auto justify-between">
         <div className="flex flex-col gap-12">
           <div className="flex flex-col gap-2 text-center">

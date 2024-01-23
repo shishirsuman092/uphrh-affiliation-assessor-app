@@ -54,7 +54,7 @@ export default function Profile() {
   }, []);
 
   const handleEditProfile = async () => {
-    console.log("data", formData);
+    //console.log("data", formData);
     let errorFlag = false;
 
     const instituteEditDetails = {
@@ -108,7 +108,7 @@ export default function Profile() {
         setToast((prevState) => ({
           ...prevState,
           toastOpen: true,
-          toastMsg: "User successfully edited",
+          toastMsg: "Updated user profile successfully.",
           toastType: "success",
         }));
         navigate(APPLICANT_ROUTE_MAP.dashboardModule.my_applications);
@@ -117,7 +117,7 @@ export default function Profile() {
       setToast((prevState) => ({
         ...prevState,
         toastOpen: true,
-        toastMsg: "Error while editing user detail.",
+        toastMsg: "Failed to edit user profile details.",
         toastType: "error",
       }));
       console.error("Registration failed due to some error:", error);
@@ -156,7 +156,7 @@ export default function Profile() {
       setToast((prevState) => ({
         ...prevState,
         toastOpen: true,
-        toastMsg: "User already registered.",
+        toastMsg: "Failed to load user profile.",
         toastType: "error",
       }));
       console.error("Can not see profile due to some error:", error);
@@ -350,7 +350,11 @@ export default function Profile() {
                 <div className="flex flex-row justify-end h-1/2 my-auto mb-0 gap-4">
                   <button
                     className="bg-gray-50 px-6 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                    onClick={() => setIsPreview(true)}
+                   // onClick={goBack}
+                   onClick={() => {
+                    setIsPreview(true);
+                    navigate(APPLICANT_ROUTE_MAP.dashboardModule.my_applications);
+                  }}
                   >
                     Cancel
                   </button>
