@@ -82,6 +82,29 @@ const generateOtp = (postData) => {
   });
 };
 
+//Deactivate user keycloak
+export const deActivateUserKeycloak = async (postData) => {
+  
+  return axios.post(`${BASE_URL}${API_URL.USER.DEACTIVATE}`, postData, {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: process.env.REACT_APP_AUTH_TOKEN,
+    },
+  });
+};
+
+//Activate user keycloak
+export const activateUserKeycloak = async (postData) => {
+
+    return axios.post(`${BASE_URL}${API_URL.USER.ACTIVATE}`, postData, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: process.env.REACT_APP_AUTH_TOKEN,
+      },
+    });
+
+};
+
 const signup = (userDetails) => {
   return axios.post(`${BASE_URL}${API_URL.SIGNUP.CREATE_USER}`, userDetails, {
     headers: {
@@ -125,10 +148,31 @@ const deleteUsers = (postData) => {
     },
   });
 };
+
+const isUserActive = (postData) => {
+  return keyCloakAxiosService.post(API_URL.USER.CHECKVALID,
+     {
+      request:{
+        fieldName: "email",
+        fieldValue: postData.email
+      }
+  },
+     {
+    headers: {
+      "Content-Type": "application/json",
+      // "Authorization": getCookie("access_token")
+      Authorization: process.env.REACT_APP_AUTH_TOKEN,
+    },
+  });
+
+};
 export const userService = {
   generateOtp,
   login,
   deleteUsers,
   signup,
   getAccessToken,
+  deActivateUserKeycloak,
+  activateUserKeycloak,
+  isUserActive
 };

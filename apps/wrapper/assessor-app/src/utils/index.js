@@ -59,17 +59,16 @@ export const makeDataForPrefill = (prev, xmlDoc, key, finalObj, formName) => {
   }
 };
 
-export const updateFormData = async (startingForm) => {
+export const updateFormData = async (startingForm, formData, fileURLs) => {
   try {
     let data = await getFromLocalForage(
       `${startingForm}_${new Date().toISOString().split("T")[0]}`
     );
-
     const GCP_form_url = `${GCP_URL}${startingForm}.xml`;
     let prefilledForm = await getSubmissionXML(
       GCP_form_url,
-      data.formData,
-      data.imageUrls
+      formData,
+      fileURLs
     );
     return prefilledForm;
   } catch (err) {}
@@ -165,16 +164,15 @@ export const removeItemFromLocalForage = (key) => {
 
 export const handleFormEvents = async (startingForm, afterFormSubmit, e) => {
   const user = getCookie("userData");
-
   if (
-    ((ENKETO_URL === `${e.origin}/enketo`) || (ENKETO_URL === `${e.origin}/enketo/`)) &&
+    ((ENKETO_URL === `${e?.origin}/enketo`) || (ENKETO_URL === `${e?.origin}/enketo/`)) &&
     // e.origin === ENKETO_URL &&
     typeof e?.data === "string" &&
     JSON.parse(e?.data)?.state !== "ON_FORM_SUCCESS_COMPLETED"
   ) {
-    var formData = new XMLParser().parseFromString(JSON.parse(e.data).formData);
+    var formData = new XMLParser().parseFromString(JSON.parse(e?.data)?.formData);
     if (formData) {
-      let images = JSON.parse(e.data).fileURLs;
+      let images = JSON.parse(e?.data)?.fileURLs;
       let prevData = await getFromLocalForage(
         `${startingForm}_${new Date().toISOString().split("T")[0]}`
       );
@@ -183,7 +181,7 @@ export const handleFormEvents = async (startingForm, afterFormSubmit, e) => {
           new Date().toISOString().split("T")[0]
         }`,
         {
-          formData: JSON.parse(e.data).formData,
+          formData: JSON.parse(e?.data)?.formData,
           imageUrls: { ...prevData?.imageUrls, ...images },
         }
       );
@@ -266,7 +264,9 @@ export const getFormData = async ({
 
     // let prefilledForm = await getPrefillXML(...prefillXMLArgs);
     // setEncodedFormURI(prefilledForm);
-  } else setData(null);
+  } else {
+    setData(null);
+  }
   loading.current = false;
 };
 

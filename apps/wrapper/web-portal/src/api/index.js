@@ -1,8 +1,10 @@
 import API_URL from "./apiUrl";
 import adminCustomPost from "./adminCustomApi";
 import fileConversionCustomPost from "./fileConversionCustomApi";
+import fileUploadAdminCustomApi from "./fileUploadAdminCustomApi";
 import axios from "axios";
 import { getCookie } from "../utils/common";
+import { utils, writeFile } from 'xlsx';
 
 const BASE_URL_KEYCLOAK =
   process.env.REACT_APP_WEB_PORTAL_USER_SERVICE_URL ||
@@ -40,6 +42,16 @@ export const fetchOGAFormsList = async (postData) => {
   );
   return res;
 };
+
+export const getOGAFormsCount = async (postData) => {
+  const res = await adminCustomPost.post(
+    API_URL.groundAnalysis.OGAFormsCount,
+    postData
+  );
+  return res;
+};
+
+
 
 export const getAcceptApplicantNoc = async (postData) => {
   const res = await adminCustomPost.put(
@@ -113,6 +125,15 @@ export const createForm = async (postData) => {
   );
   return res;
 };
+
+export const findFormsWithSameName = async (postData) => {
+  return await adminCustomPost.post(
+    API_URL.manageForms.findForms,
+    postData
+  );
+};
+
+
 
 export const getForms = async (postData) => {
   const res = await adminCustomPost.post(
@@ -200,6 +221,22 @@ export const getAllRegulators = async (postData) => {
   return res;
 };
 
+export const fetchAllDeskTopAssessors = async (postData) => {
+  const res = await adminCustomPost.post(
+    API_URL.manageUsers.getRegulatorsByRole,
+    postData
+  );
+  return res;
+};
+
+export const fetchAllInstitutes = async (postData) => {
+  return await adminCustomPost.post(
+    API_URL.manageUsers.getAllInstitutes,
+    postData
+  );
+};
+
+
 export const getUsersForScheduling = async (postData) => {
   const res = await adminCustomPost.post(
     API_URL.desktopAnalysis.getUsersForSchedulingAssessment,
@@ -215,6 +252,14 @@ export const handleActiveUser = async (postData) => {
   return res;
 };
 
+export const handleActiveRegulatorUser = async (postData) => {
+  const res = await adminCustomPost.put(
+    API_URL.manageUsers.setRegulatorActive,
+    postData
+  );
+  return res;
+};
+
 export const handleDeleteUser = async (postData) => {
   return await adminCustomPost.delete(API_URL.manageUsers.deleteUser, {
     data: postData,
@@ -224,6 +269,14 @@ export const handleDeleteUser = async (postData) => {
 export const handleInctiveUser = async (postData) => {
   const res = await adminCustomPost.put(
     API_URL.manageUsers.setDeactive,
+    postData
+  );
+  return res;
+};
+
+export const handleInctiveRegulatorUser = async (postData) => {
+  const res = await adminCustomPost.put(
+    API_URL.manageUsers.setRegulatorDeactive,
     postData
   );
   return res;
@@ -268,6 +321,14 @@ export const addInstituteCourse = async (postData) => {
   );
   return res;
 };
+
+export const getAssessorFormData = async (postData) => {
+  const res = await adminCustomPost.post(
+    API_URL.desktopAnalysis.getOGAFormDetails,
+    postData
+  );
+  return res;
+}
 export const getDesktopAnalysisForms = async (postData) => {
   const res = await adminCustomPost.post(
     API_URL.desktopAnalysis.getDesktopAnalysisForms,
@@ -283,6 +344,7 @@ export const getAllTheCourses = async (postData) => {
   );
   return res;
 };
+
 
 export const filterDesktopAnalysis = async (postData) => {
   const res = await adminCustomPost.post(
@@ -343,10 +405,18 @@ export const getScheduledList = async (postData) => {
   return res;
 };
 
+export const uploadAssessmentSchedule = async (postData) => {
+  const res = await fileUploadAdminCustomApi.post(
+    API_URL.scheduleManagement.uploadAssessmentSchedule,
+    postData,
+  );
+  return res;
+};
+
 // Bulk create users keycloak
 export const createBulkUsersKeyCloak = async (postData) => {
-  const res = await axios.post(
-    `${BASE_URL_KEYCLOAK}${API_URL.SIGNUP.CREATE_USER}`,
+  return await axios.post(
+    `${BASE_URL_KEYCLOAK}${API_URL.USER.CREATE_BULK}`,
     postData,
     {
       headers: {
@@ -355,6 +425,13 @@ export const createBulkUsersKeyCloak = async (postData) => {
         Authorization: process.env.REACT_APP_AUTH_TOKEN,
       },
     }
+  );
+};
+
+export const checkIsEmailExist = async (postData) => {
+  const res = await adminCustomPost.post(
+    API_URL.SIGNUP.CHECK_IS_EMAIL_EXIST,
+    postData
   );
   return res;
 };
@@ -537,9 +614,61 @@ export const getApplicantDeviceId = async (postData) => {
   return res;
 };
 
+//Dashboard apis
+
+
+export const searchDashBoard = async (postData) => {
+  const res = await adminCustomPost.post(
+    API_URL.dashboard.search,
+    postData
+  );
+  return res;
+};
+
+export const filterDashBoardData = async (postData) => {
+  const res = await adminCustomPost.post(
+    API_URL.dashboard.filter,
+    postData
+  );
+  return res;
+};
+
+export const getInProgressCount = async (postData) => {
+  const res = await adminCustomPost.post(
+    API_URL.dashboard.progresscount,
+    postData
+  );
+  return res;
+};
+
+export const getApprovedCount = async (postData) => {
+  console.log(postData)
+  const res = await adminCustomPost.post(
+    API_URL.dashboard.approvedcount,
+    postData
+  );
+  return res;
+};
+
+export const getRejectedCount = async (postData) => {
+  const res = await adminCustomPost.post(
+    API_URL.dashboard.rejectedcount,
+    postData
+  );
+  return res;
+};
+
+
+
+
 //other common APIs
 export const updateFormStatus = async (postData) => {
   const res = await adminCustomPost.put(API_URL.common.updateForm, postData);
+  return res;
+};
+
+export const updateFormStatusForOGA = async (postData) => {
+  const res = await adminCustomPost.put(API_URL.common.updateFormStatusForOGA, postData);
   return res;
 };
 
@@ -565,3 +694,99 @@ export const getTransactionDetail = async (postData) => {
   );
   return res;
 };
+
+/* returns course mapping based on course type and course level */
+export const getCoursesByTypeAndLevel = async (postData) => {
+  const res = await adminCustomPost.post(
+    API_URL.manageForms.getCourses,
+    postData
+  )
+  return res;
+}
+
+
+//#region (roles apis)
+
+export const fetchAllUserRoles = async (postData) => {
+  return await adminCustomPost.post(
+    API_URL.manageRoles.getAll,
+    postData
+  )
+}
+
+export const getSpecificRoleByRoleId = async (postData) => {
+  return await adminCustomPost.post(
+    API_URL.manageRoles.getRoleById,
+    postData
+  )
+}
+
+export const editRole = async (postData) => {
+  return await adminCustomPost.post(
+    API_URL.manageRoles.editRole,
+    postData
+  )
+}
+
+export const createRole = async (postData) => {
+  return await adminCustomPost.put(
+    API_URL.manageRoles.addRole,
+    postData
+  )
+}
+
+export const updateRoleById = async (postData) => {
+  const res = await adminCustomPost.post(
+    API_URL.manageRoles.toggleRoleStatus,
+    postData
+  );
+  return res;
+};
+
+
+
+
+
+//#region (roles apis)
+
+
+
+//#region (xlsx)
+
+//#region (json to xlsx)
+export const exportToExcel = async (downloadObjects) => {
+  if (downloadObjects && downloadObjects.objectsList) {
+    const workbook = utils.book_new();
+    let wscols = [
+      {wch:10},
+      {wch:20},
+      {wch:20},
+      {wch:20},
+      {wch:25},
+      {wch:20},
+      {wch:10}
+  ];
+  
+    downloadObjects.objectsList.forEach((element) => {
+      const sheetName = element.sheetName ? element.sheetName : `Sheet ${workbook.SheetNames.length + 1}`
+      const worksheet = utils.json_to_sheet([]);
+      worksheet['!cols'] = wscols;
+      utils.sheet_add_aoa(worksheet, [element.headers])
+      utils.book_append_sheet(workbook, worksheet, sheetName);
+      utils.sheet_add_json(worksheet, element.downloadObject, { origin: 'A4', skipHeader: true });
+    });
+    writeFile(workbook, downloadObjects.fileName ? downloadObjects.fileName : 'data.xlsx');
+    //writeFile(workbook, 'NoteExport.xls', { bookType: 'xlsx', type: 'buffer' });
+  }
+}
+
+//download pdf
+export const base64ToPdf = async (postData) => {
+  const res = await axios.post(`${process.env.REACT_APP_PDF_DOWNLOAD_URL}/convert-via-puppeteer/pdfpuppeteer`, {
+    url: postData,
+  });
+  return res;
+};
+//#endregion
+
+//#endregion
