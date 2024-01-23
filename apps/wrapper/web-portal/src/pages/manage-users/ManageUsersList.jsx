@@ -1109,7 +1109,7 @@ export default function ManageUsersList({
                   </a>
                 </li>
                 <li
-             //  style={{display:'none'}}
+               style={{display:'none'}}
                   className="mr-2"
                   onClick={() => handleSelectMenu("Applicant")}
                 >
@@ -1127,7 +1127,7 @@ export default function ManageUsersList({
                 </li>
 
                 <li
-             //  style={{display:'none'}}
+               style={{display:'none'}}
                   className="mr-2"
                   onClick={() => handleSelectMenu("OGA Scheduler")}
                 >
@@ -1145,7 +1145,7 @@ export default function ManageUsersList({
                 </li>
 
                 <li
-             //  style={{display:'none'}}
+               style={{display:'none'}}
                   className="mr-2"
                   onClick={() => handleSelectMenu("Report Analyst")}
                 >
