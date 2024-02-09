@@ -88,9 +88,9 @@ function App() {
   useEffect(() => {
     getPermissionForToken();
 
-setTimeout(() => {
-  console.log("checking conn")
-  if(!isOnline){
+setInterval(() => {
+ // console.log("checking conn",navigator.onLine)
+  if(!navigator.onLine){
     setToast((prevState) => ({
       ...prevState,
       toastOpen: true,
@@ -98,7 +98,7 @@ setTimeout(() => {
       toastType: "error",
     }));
   }
-}, 3000);
+}, 5000);
 
   }, []);
 

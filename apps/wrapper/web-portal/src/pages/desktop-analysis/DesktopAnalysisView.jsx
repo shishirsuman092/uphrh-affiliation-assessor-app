@@ -41,12 +41,16 @@ import { ContextAPI } from "../../utils/ContextAPI";
 import { StrictMode } from "react";
 import ReturnToInstituteModal from "./ReturnToInstituteModal";
 
+
+import CommentsModal from "../../components/CommentsModal";
+
 import {
   FaFileDownload,
 } from "react-icons/fa";
 
 const ENKETO_URL = process.env.REACT_APP_ENKETO_URL;
 let isFormSubmittedForConfiirmation = false;
+
 
 export default function DesktopAnalysisView() {
   const [returnToInstituteModal, setReturnToInstituteModal] = useState(false);
@@ -67,8 +71,18 @@ export default function DesktopAnalysisView() {
   const [rejectStatus, setRejectStatus] = useState(false);
   const [formLoaded, setFormLoaded] = useState(false);
   let [isDownloading, setIsDownloading] = useState(false);
+  
+  
+  const [showAlert, setShowAlert] = useState(false);
+  const [state, setState] = useState({
+    alertContent: {
+      alertTitle: "",
+      alertMsg: "",
+      actionButtonLabel: "",
+    },
+  });
 
-  const loggedInUserRole = getCookie("userData").userRepresentation.attributes.Role[0];
+  const loggedInUserRole = getCookie("userData").attributes.Role[0];
 
   const formSpec = {
     skipOnSuccessMessage: true,
@@ -97,7 +111,7 @@ export default function DesktopAnalysisView() {
   );
 
   const userDetails = getCookie("userData");
-  const userId = userDetails?.userRepresentation?.id;
+  const userId = userDetails?.id;
 
   const fetchFormData = async () => {
     let formData = {};
@@ -183,7 +197,7 @@ export default function DesktopAnalysisView() {
     const res = await updateFormSubmission({
       form_id: formId,
       form_data: updatedFormData,
-      assessment_type: "applicant",
+      assessment_type: null,
       form_name: formName?.replace("admin", "applicant"),
       submission_status: true,
       course_type: formDataFromApi?.course_type,
@@ -203,7 +217,7 @@ export default function DesktopAnalysisView() {
         entity_id: formId.toString(),
         entity_type: "form",
         event_name: formSubmissionStatus, // "Returned",
-        remarks: `${userDetails?.userRepresentation?.username} has ${formSubmissionStatus} application with remarks`,
+        remarks: `${userDetails?.username} has ${formSubmissionStatus} application with remarks`,
       });
 
       //notifications
@@ -345,11 +359,24 @@ export default function DesktopAnalysisView() {
   };
 
   const handleEventTrigger = async (e) => {
+   // console.log(e)
+    //setShowAlert(true);
+    setState((prevState) => ({
+      ...prevState,
+      alertContent: {
+        quesContent: "Is your institute's Principal graduate?",
+        alertMsg: "Are you sure to publish the form ? ",
+        actionButtonLabel: "Save",
+        actionProps: [e],
+      },
+    }));
+
     handleFormEvents(startingForm, afterFormSubmit, e);
   };
 
   const bindEventListener = () => {
     window.addEventListener("message", handleEventTrigger);
+  
   };
   const otherInfo = {
     form_name: formDataFromApi?.form_name,
@@ -466,21 +493,44 @@ export default function DesktopAnalysisView() {
   
   };
 
+  const addAlert = (e) => {
+   console.log(e);
+  }
+
   const checkIframeLoaded = () => {
     console.log(formDataFromApi.reverted_count)
     if (window.location.host.includes("regulator.upsmfac")) {
       const iframeElem = document?.getElementById("enketo_DA_preview");
       var iframeContent =
         iframeElem?.contentDocument || iframeElem?.contentWindow.document;
+        // append icon element to DOM after iframeload 
+        var section = iframeContent?.getElementsByClassName("or-group");
+        if (!section) return;
+        for (let j = 0; j < section?.length; j++) {
+          const labelElements = section[j].getElementsByClassName("question");
+          for(let i = 0; i < labelElements.length; i++) {
+            let element = document.createElement("i");
+            element.setAttribute("class","fa fa-comment");
+            element.setAttribute('id', 'comment-section');
+            element.addEventListener('click', addAlert);
+            labelElements[i].insertBefore(element, labelElements[i].childNodes[2]);
+
+        }
+      }
       if (
         formDataFromApi &&
         formDataFromApi?.form_status?.toLowerCase() !==
           "application submitted" &&
         formDataFromApi?.form_status?.toLowerCase() !== "resubmitted"
       ) {
-        var section = iframeContent?.getElementsByClassName("or-group");
         if (!section) return;
-        for (var i = 0; i < section?.length; i++) {
+        for (let i = 0; i < section?.length; i++) {
+        //   const labelElements = section[i].getElementsByClassName("question");
+        //   for(let i = 0; i < labelElements.length; i++) {
+        //     let element = document.createElement("i");
+        //     element.setAttribute("class","fa fa-comment");
+        //     labelElements[i].insertBefore(element, labelElements[i].childNodes[2]);
+        // }
           var inputElements = section[i].querySelectorAll("input");
           var buttonElements = section[i].querySelectorAll("button");
           
@@ -558,6 +608,10 @@ export default function DesktopAnalysisView() {
 
   return (
     <StrictMode>
+       
+        {showAlert && (
+          <CommentsModal showAlert={setShowAlert} {...state.alertContent} />
+        )}
       <div className="h-[48px] bg-white flex justify-start drop-shadow-sm">
         <div className="container mx-auto flex px-3">
           <div className="flex flex-row font-bold gap-2 items-center">
@@ -632,7 +686,7 @@ export default function DesktopAnalysisView() {
                     </span>
                   </button>
                 )}
-             { console.log(paymentStatus)}
+           {/*   { console.log(paymentStatus)} */}
                  {paymentStatus?.toLowerCase() === "initiated" && formDataFromApi?.round === 2 &&
                 formDataFromApi?.form_status?.toLowerCase() ===
                   "da completed" && loggedInUserRole !== "Desktop-Assessor" && (

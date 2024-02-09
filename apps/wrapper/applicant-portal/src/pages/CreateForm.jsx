@@ -82,8 +82,7 @@ const CreateForm = (props) => {
   const [onSubmit, setOnSubmit] = useState(false);
   const [reloadForm, setReloadForm] = useState(true);
 
-  const { userRepresentation } = getCookie("userData");
-  const userId = userRepresentation?.id;
+  const userId = getCookie("userData")?.id;
   const instituteDetails = getCookie("institutes");
   const [openStatusModel, setOpenStatusModel] = useState(false);
 
@@ -370,6 +369,7 @@ const CreateForm = (props) => {
         // console.log(response);
         // if the application is drafted, remove it's entry post form submission
         if (response) {
+          // form submission success message 
           const draft = await getFromLocalForage("draft");
           console.log("draft ===>", draft);
           if (draft && draft.draftId !== "") {
@@ -379,11 +379,25 @@ const CreateForm = (props) => {
             console.log("req", request);
             try {
               await deleteApplicationDraft(request);
-              removeItemFromLocalForage("draft");
+              removeItemFromLocalForage("draft");        
             } catch (error) {
               console.log("error =>", error);
             }
           }
+          isFormInPreview = false;
+              setOnSubmit(false);
+              setToast((prevState) => ({
+                ...prevState,
+                toastOpen: true,
+                toastMsg: "Form Submitted Successfully!.",
+                toastType: "success",
+              }));
+        
+              setTimeout(
+                () =>
+                  navigate(`${APPLICANT_ROUTE_MAP.dashboardModule.my_applications}`),
+                1500
+              );
           //  await removeAllFromLocalForage();
         }
         console.log(

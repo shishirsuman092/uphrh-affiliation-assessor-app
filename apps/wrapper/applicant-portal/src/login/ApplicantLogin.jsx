@@ -46,8 +46,11 @@ const ApplicantLogin = () => {
 
   const isUserActive = async (data) => {
     //setSpinner(true);
+    console.log("REACT_APP_WEB_PORTAL_USER_SERVICE_URL-->", process.env.REACT_APP_WEB_PORTAL_USER_SERVICE_URL )
+
     try {
       const res = await userService.isUserActive(data);
+      console.log(res)
       if (res?.data[0]?.enabled && res?.data[0]?.attributes.Role[0] === "Institute") {
         login(data);
         //setSpinner(false);
@@ -126,8 +129,10 @@ const ApplicantLogin = () => {
 
       const role = loginRes?.data?.userRepresentation?.attributes?.Role?.[0];
 
+      console.log(loginRes?.data)
+
       if (role === "Institute") {
-        setCookie("userData", loginRes.data);
+        setCookie("userData", loginRes?.data?.userRepresentation);
         setCookie("institutes", applicantDetailsRes.data.institutes);
         navigate(APPLICANT_ROUTE_MAP.dashboardModule.my_applications);
       } else {
@@ -202,13 +207,13 @@ const ApplicantLogin = () => {
                     type="submit"
                   ></Button>
                   <p className="flex justify-center my-6">
-                    <span className="text-gray-400">Create an account, </span>
+                    <span className="text-gray-400">Not registered yet?, </span>
                     &nbsp;
                     <Link
                       to={APPLICANT_ROUTE_MAP.dashboardModule.register}
                       className="text-primary-700"
                     >
-                      Sign up
+                      Register here
                     </Link>
                   </p>
                 </form>

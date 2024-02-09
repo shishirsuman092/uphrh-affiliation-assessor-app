@@ -111,8 +111,7 @@ const AdminLogin = () => {
       };
 
       const loginRes = await userService.login(loginDetails);
-     // console.log(loginRes);
-
+      console.log(loginRes);
       if (loginRes?.data?.error) {
         setToast((prevState) => ({
           ...prevState,
@@ -123,14 +122,27 @@ const AdminLogin = () => {
         return;
       }
 
-
+  
 
       const user_details = loginRes?.data?.userRepresentation;
+      console.log(loginRes?.data)
+      setCookie("userData", user_details);
+      
       const adminDetailsRes = await getRegulator({
         user_id: user_details?.id,
       });
-      const role = loginRes?.data?.userRepresentation?.attributes?.Role?.[0];
-      setCookie("userData", loginRes.data);
+     //let role = loginRes?.data?.userRepresentation?.attributes?.Role[0]; ///comment this line when using uat env
+      const role = loginRes?.data?.userRepresentation?.attributes?.Role[0]; ///comment this line when using in dev env 
+    /*  let role;
+     if((window.location.host.includes("regulator.upsmfac")) || (window.location.host.includes("localhost"))){
+           role = loginRes?.data?.userRepresentation?.attributes?.Role[0]; /// dev env 
+    
+     } else {
+           role = loginRes?.data?.userRepresentation?.attributes?.Role[0]; /// uat env
+  
+     } */
+     
+     console.log(role)
       setCookie("regulator", adminDetailsRes.data.regulator);
       if (role === "Super-Admin" || role === "Desktop-Admin") {
         navigate(ADMIN_ROUTE_MAP.adminModule.manageUsers.home);
@@ -150,7 +162,7 @@ const AdminLogin = () => {
       //setting device ID
       if (getCookie("firebase_client_token") !== undefined) {
         await updateRegulatorDeviceId({
-          user_id: getCookie("userData")?.userRepresentation?.id,
+          user_id: getCookie("userData")?.id,
           device_id: JSON.stringify([getCookie("firebase_client_token")]),
         });
       }

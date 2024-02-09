@@ -43,9 +43,10 @@ const GenericOdkForm = (props) => {
   const scheduleId = useRef();
   const [isPreview, setIsPreview] = useState(false);
   const [surveyUrl, setSurveyUrl] = useState("");
-  const userId = user?.userRepresentation?.id;
+  const userId = user?.id;
   const [formDataFromApi, setFormDataFromApi] = useState();
   const [formStatus, setFormStatus] = useState("");
+  const onlineInterval = useRef();
   let formSpec = {
     forms: {
       [formName]: {
@@ -96,6 +97,7 @@ const GenericOdkForm = (props) => {
   const [previewModal, setPreviewModal] = useState(false);
   const { state } = useContext(StateContext);
   const [formLoaded, setFormLoaded] = useState(false);
+  const [dbInstantitated, setDBInstantiated] = useState(false);
   let courseObj = undefined;
 
   const loading = useRef(false);
@@ -111,7 +113,7 @@ const GenericOdkForm = (props) => {
 
 
   const getDataFromLocal = async () => {
-    const id = user?.userRepresentation?.id;
+    const id = user?.id;
     let formData = await getFromLocalForage(
       `${formName}_${new Date().toISOString().split("T")[0]}`
     );
@@ -133,7 +135,14 @@ const GenericOdkForm = (props) => {
       if(surveyUrl !== "") {
       await updateFormDataInEnketoIndexedDB();}
     }, 6000);
+    // onlineInterval.current = setInterval(async () => {
+      // if(surveyUrl !== "") {
+      //  updateFormDataInEnketoIndexedDB();
+      // }
+    // }, 1000);
+    // return () => clearInterval(onlineInterval.current);
   },[surveyUrl])
+
 
   /* fetch form data from API */
   const fetchFormData = async () => {
@@ -208,7 +217,7 @@ const GenericOdkForm = (props) => {
           entity_id: courseObj?.applicant_form_id.toString(),
           entity_type: "form",
           event_name: "OGA Completed",
-          remarks: `${user?.userRepresentation?.firstName} ${user?.userRepresentation?.lasttName} has completed the On Ground Inspection Analysis`,
+          remarks: `${user?.firstName} ${user?.lasttName} has completed the On Ground Inspection Analysis`,
         });
   
         await updateFormStatus({
@@ -339,6 +348,8 @@ const GenericOdkForm = (props) => {
   
   const handleFormEvents = async (startingForm, afterFormSubmit, e) => {
     const user = getCookie("userData");
+    const eventFormData =
+    typeof e.data === "string" ? JSON.parse(e.data) : e.data;
     const event = e;
     if (
       ((ENKETO_URL === `${event.origin}/enketo`) || (ENKETO_URL === `${event.origin}/enketo/`)) &&
@@ -353,7 +364,7 @@ const GenericOdkForm = (props) => {
           `${startingForm}_${new Date().toISOString().split("T")[0]}`
         );
         await setToLocalForage(
-          `${user?.userRepresentation?.id}_${startingForm}_${
+          `${user?.id}_${startingForm}_${
             new Date().toISOString().split("T")[0]
           }`,
           {
@@ -362,6 +373,20 @@ const GenericOdkForm = (props) => {
           }
         );
       }
+    }
+    if(eventFormData?.formData?.draft !== "" &&
+    eventFormData?.formData?.draft === true) {
+        let db;
+        const DBOpenRequest = window.indexedDB.open("enketo", 3);
+        DBOpenRequest.onsuccess = (event) => {
+          db = DBOpenRequest.result;
+        
+          // Clear all the data from the object store
+          clearData(db);
+        };
+  
+        //alert("Hello world!");
+  
     }
     afterFormSubmit(event);
   };
@@ -406,17 +431,26 @@ const GenericOdkForm = (props) => {
       // iframeContent.getElementById("submit-form").style.display = "none";
       // iframeContent.getElementById("save-draft").style.display = "none";
     }
-    var draftButton = iframeContent.getElementById("save-draft");
-    draftButton?.addEventListener("click", function () {
-      //alert("Hello world!");
-    });
+  }
+    // var draftButton = iframeContent.getElementById("save-draft");
+    
 
-    var optionElements = iframeContent.getElementsByClassName('option-label');
-    if (!optionElements) return;
-    for(var k = 0; k < optionElements.length; k++ ) {
-      optionElements[k].style.color = '#333333';
+    const clearData = (db) => {
+      // open a read/write db transaction, ready for clearing the data
+      const transaction = db?.transaction(["records"], "readwrite");
+    
+      // report on the success of the transaction completing, when everything is done
+      // create an object store on the transaction
+      const objectStore = transaction?.objectStore("records");
+    
+      // Make a request to clear all the data out of the object store
+      const objectStoreRequest = objectStore?.clear();
+    
+      objectStoreRequest.onsuccess = (event) => {
+        // report the success of our request
+        console.log("cleared entry");
+      };
     }
-  };
 
   const handleRenderPreview = () => {
     setPreviewModal(true);
@@ -459,7 +493,9 @@ const GenericOdkForm = (props) => {
   };
 
   const updateFormDataInEnketoIndexedDB = async () => {
+    // fetch form data only if there is no drafted entry in DB 
     let formDataresp = await fetchFormData();
+    
     let db;
     const splitURL = surveyUrl.split("/");
     const surveyInstance = splitURL[splitURL.length - 1];
@@ -467,26 +503,39 @@ const GenericOdkForm = (props) => {
     const req = window.indexedDB.open('enketo', 3);
 
     req.onsuccess = (e) => {
-      console.log("e ==>", e);
       // Create the DB connection
       db = req.result;
 // trial error method
       const objectStore = db?.transaction(["records"], "readwrite")
       .objectStore("records");
+      const enketodataStore = db?.transaction(["data"], "readwrite").objectStore("data");
 
+      const enketoDataStoreDataRequest = enketodataStore.getAll();
     const objectStoreTitleRequest = objectStore.getAll();
+
+    enketoDataStoreDataRequest.onSuccess = (e) => {
+      const data = enketoDataStoreDataRequest.result;
+      
+      if(data.length > 0) {
+        console.log("Hieeeee");
+      }
+      else {
+        console.log("no enketo result found");
+      }
+    }
 
     objectStoreTitleRequest.onsuccess = (e) => {
       // Grab the data object returned as the result
       const data = objectStoreTitleRequest.result;
       let valueToBeUpdated = data[data.length - 1];
       if (valueToBeUpdated) {
-        console.log(valueToBeUpdated.xml)
-        valueToBeUpdated.xml = formDataresp;
-        console.log(valueToBeUpdated.xml)
+        console.log("value =>", valueToBeUpdated);
+        // console.log(valueToBeUpdated.xml)
+        // valueToBeUpdated.xml = formDataresp;
+        // console.log(valueToBeUpdated.xml)
         // Create another request that inserts the item back into the database
         const updateTitleRequest = objectStore.put(valueToBeUpdated);
-
+        
         // Log the transaction that originated this request
         console.log(
           `The transaction that originated this request is ${updateTitleRequest.transaction}`,
@@ -516,6 +565,7 @@ const GenericOdkForm = (props) => {
           var saveReq = store.put(autoSaveObj);
 
           saveReq.onsuccess = function (e) {
+            setDBInstantiated(true);
             console.log("Success", e)
           };
           saveReq.onerror = function (e) {
@@ -557,10 +607,10 @@ const GenericOdkForm = (props) => {
   }, []);
 
   useEffect(() => {
-    if(formLoaded === true) {
+    if(formLoaded === true || dbInstantitated === true) {
       checkIframeLoaded();
     }
-  }, [formLoaded])
+  }, [formLoaded, dbInstantitated])
 
   // useEffect(() => {
   //   if(surveyUrl !== "") {
@@ -590,7 +640,7 @@ const GenericOdkForm = (props) => {
     <>
     <CommonLayout
       {...props.commonLayoutProps}
-     // formUrl={`${ENKETO_URL}/preview?formSpec=${encodedFormSpec}&xform=${encodedFormURI}&userId=${user?.userRepresentation?.id}`}
+     // formUrl={`${ENKETO_URL}/preview?formSpec=${encodedFormSpec}&xform=${encodedFormURI}&userId=${user?.id}`}
      formUrl = {surveyUrl} 
      formPreview={true}
       setIsPreview={setIsPreview}
@@ -602,7 +652,7 @@ const GenericOdkForm = (props) => {
               <iframe
                 title="form"
                 id="enketo-form"
-                src={`${ENKETO_URL}/preview?formSpec=${encodedFormSpec}&xform=${encodedFormURI}&userId=${user?.userRepresentation?.id}`}
+                src={`${ENKETO_URL}/preview?formSpec=${encodedFormSpec}&xform=${encodedFormURI}&userId=${user?.id}`}
                 style={{ height: "80vh", width: "100%" }}
               />
             </>
@@ -610,7 +660,7 @@ const GenericOdkForm = (props) => {
         </div>
       )}
 
-      {surveyUrl !=="" && date === undefined && (
+      {(surveyUrl !=="" && date === undefined) && (
         <>
           <iframe
             id="offline-enketo-form"
@@ -672,7 +722,7 @@ const GenericOdkForm = (props) => {
             <iframe
               title="form"
               id="preview-enketo-form"
-              src={`${ENKETO_URL}/preview?formSpec=${encodedFormSpec}&xform=${encodedFormURI}&userId=${user?.userRepresentation?.id}`}
+              src={`${ENKETO_URL}/preview?formSpec=${encodedFormSpec}&xform=${encodedFormURI}&userId=${user?.id}`}
               style={{ height: "80vh", width: "100%", marginTop: "20px" }}
             />
           )}
